@@ -1,11 +1,11 @@
 import http, { IncomingMessage, Server, ServerResponse } from "http";
+import config from "./config";
 
 const server: Server = http.createServer(
   (req: IncomingMessage, res: ServerResponse) => {
     console.log("Server is running");
 
     if (req.url === "/" && req.method === "GET") {
-      console.log("server hit");
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({
@@ -14,9 +14,43 @@ const server: Server = http.createServer(
         })
       );
     }
+
+    if (req.url === "/api" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          message: "health status ok",
+          path: req.url,
+        })
+      );
+    }
+
+    if (req.url === "/api/users" && req.method === "POST") {
+      let body = "";
+
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on("end", () => {
+        try {
+          console.log(body);
+          const parsed = JSON.parse(body);
+          res.writeHead(201);
+          res.end(body);
+        } catch (error: any) {
+          console.log(error?.message);
+          res.end(
+            JSON.stringify({
+              message: error.message,
+            })
+          );
+        }
+      });
+    }
   }
 );
 
-server.listen(5000, () => {
-  console.log(`Server is running on post: ${5000}`);
+server.listen(config.port, () => {
+  console.log(`Server is running on http://localhost:${config.port}`);
 });
