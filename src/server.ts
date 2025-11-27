@@ -1,16 +1,10 @@
 import http, { IncomingMessage, Server, ServerResponse } from "http";
 import config from "./config";
-import addHandler, { RouteHandler, routes } from "./helpers/RouteHandler";
 
-addHandler("GET", "/", (req, res) => {
-  res.writeHead(200, { "content-type": "application/json" });
-  res.end(
-    JSON.stringify({
-      message: "Hello from nodejs using typescript",
-      path: req.url,
-    })
-  );
-});
+import sendJSON from "./helpers/sendJson";
+import "./routes";
+import findDynamicRoute from "./helpers/dynamicRouteHandler";
+import { RouteHandler, routes } from "./helpers/routeHandler";
 
 const server: Server = http.createServer(
   (req: IncomingMessage, res: ServerResponse) => {
@@ -24,60 +18,19 @@ const server: Server = http.createServer(
 
     if (handler) {
       handler(req, res);
+    } else if (findDynamicRoute(method, path)) {
+      const match = findDynamicRoute(method, path);
+
+      (req as any).params = match?.params;
+
+      match?.handler(req, res);
     } else {
-      res.writeHead(404);
-      res.end(
-        JSON.stringify({
-          success: false,
-          message: "route not found",
-          path,
-        })
-      );
+      sendJSON(res, 404, {
+        success: false,
+        message: "route not found",
+        path,
+      });
     }
-
-    // if (req.url === "/" && req.method === "GET") {
-    //   res.writeHead(200, { "content-type": "application/json" });
-    //   res.end(
-    //     JSON.stringify({
-    //       message: "Hello from nodejs using typescript",
-    //       path: req.url,
-    //     })
-    //   );
-    // }
-
-    // if (req.url === "/api" && req.method === "GET") {
-    //   res.writeHead(200, { "content-type": "application/json" });
-    //   res.end(
-    //     JSON.stringify({
-    //       message: "health status ok",
-    //       path: req.url,
-    //     })
-    //   );
-    // }
-
-    // if (req.url === "/api/users" && req.method === "POST") {
-    //   let body = "";
-
-    //   req.on("data", (chunk) => {
-    //     body += chunk.toString();
-    //   });
-
-    //   req.on("end", () => {
-    //     try {
-    //       console.log(body);
-    //       const parsed = JSON.parse(body);
-    //       res.writeHead(201);
-    //       res.end(body);
-    //     } catch (error: any) {
-    //       console.log(error?.message);
-    //       res.end(
-    //         JSON.stringify({
-    //           message: error.message,
-    //         })
-    //       );
-    //     }
-    //   });
-    // }
   }
 );
 
